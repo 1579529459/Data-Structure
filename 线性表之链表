@@ -1,0 +1,139 @@
+#include"SList.h"
+
+SListNode* BuySListNode(SLTDateType x) //新申请一个节点并初始化  之后再根据一系列操作连入链表！
+{
+	SListNode* newnode = (SListNode *)malloc(sizeof(SListNode));
+	newnode->data = x;
+	newnode->next = NULL;
+	return newnode;
+}
+
+void SListPrint(SListNode* plist)
+{
+	if (plist == NULL)//
+	{
+		printf("NULL\n");
+		return;
+	}
+	while (plist->next != NULL)
+	{
+		printf("%d->",plist->data);
+		//plist++;这是顺序表里 连续存放才能++。。。。。
+		plist = plist-> next;
+	}
+	printf("%d\n",plist->data);
+}
+
+void SListPushBack(SListNode** pplist, SLTDateType x)
+{
+	SListNode* newnode = BuySListNode(x);
+	SListNode* cunt = *pplist;
+	if (*pplist == NULL)//
+	{
+		(*pplist) = newnode;
+		return;
+	}
+	while (cunt->next != NULL)
+	{
+		cunt =cunt->next;
+	}
+	cunt->next = newnode;
+
+
+}
+
+void SListPushFront(SListNode** pplist, SLTDateType x)
+{
+	SListNode* newnode = BuySListNode(x);
+	newnode -> next = *pplist;//此处不管*plist原来是不是NULL 都符合逻辑..nice
+	*pplist = newnode;
+}
+
+void SListPopBack(SListNode** pplist)
+{
+	if (*pplist == NULL) return;
+	else if ((*pplist)->next == NULL)//只有1个 也是特判！
+	{
+		free(*pplist);
+		*pplist = NULL;
+	}
+	else
+	{
+		SListNode* cunt = *pplist;
+		while (cunt->next->next != NULL)
+		{
+			cunt = cunt->next;
+		}
+		free(cunt->next);
+		cunt->next = NULL;
+
+	}
+
+}
+void SListPopFront(SListNode** pplist)
+{
+	if (*pplist == NULL)//0个
+	{
+		return;
+	}
+	else
+	{
+		SListNode* tmp = *pplist;
+		*pplist = (*pplist)->next;
+		free(tmp);
+		tmp = NULL;
+	}
+}
+	
+SListNode* SListFind(SListNode* plist, SLTDateType x)//查找和后面再某值插入是复用 所以返回一个找到的节点！
+{
+	assert(plist);
+	while (plist)
+	{
+		if (plist->data==	x)
+		{
+			return plist;
+		}
+		else plist = plist->next;
+	}
+	
+	return NULL;
+	
+}
+
+void SListInsert(SListNode** pplist, SListNode* pos, SLTDateType x)
+{
+	assert(*pplist&&pos);
+	if ((*pplist)== pos)
+	{
+		SListPushFront(pplist,x);
+		return;
+	}
+	SListNode* cunt = *pplist;
+	SListNode* newnode = BuySListNode(x);
+	while (cunt->next!=pos)
+	{
+		cunt = cunt->next;
+	}
+	cunt->next = newnode;
+	newnode->next = pos;
+}
+
+void SListErase(SListNode** pplist, SListNode* pos)
+{
+	assert(*pplist&&pos);
+	if ((*pplist) == pos)
+	{
+		SListPopFront(pplist);
+		return;
+	}
+	SListNode* cunt = *pplist;
+	while (cunt->next!= pos)
+	{
+		cunt = cunt->next;
+	}
+	cunt->next = pos->next;
+	free(pos);
+	pos = NULL;
+	
+}
