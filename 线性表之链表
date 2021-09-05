@@ -1,3 +1,44 @@
+
+==========================================================================Slist.h================================================================================================
+==========================================================================Slist.h================================================================================================
+==========================================================================Slist.h================================================================================================
+#pragma once
+#define _CRT_SECURE_NO_WARNINGS 1
+#include <stdio.h>
+#include <assert.h>
+#include <stdlib.h>
+
+// 1、无头+单向+非循环链表增删查改实现
+typedef int SLTDateType;
+typedef struct SListNode
+{
+	SLTDateType data;
+	struct SListNode* next;
+}SListNode;
+
+// 动态申请一个节点
+SListNode* BuySListNode(SLTDateType x);
+// 单链表打印
+void SListPrint(SListNode* plist);
+// 单链表尾插
+void SListPushBack(SListNode** pplist, SLTDateType x);
+// 单链表的头插
+void SListPushFront(SListNode** pplist, SLTDateType x);
+// 单链表的尾删
+void SListPopBack(SListNode** pplist);
+// 单链表头删
+void SListPopFront(SListNode** pplist);
+// 单链表查找
+SListNode* SListFind(SListNode* plist, SLTDateType x);
+// 单链表在pos位置之前插入x
+void SListInsert(SListNode** pplist, SListNode* pos, SLTDateType x);
+// 单链表删除pos位置的值
+void SListErase(SListNode** pplist, SListNode* pos);
+
+==========================================================================Slist.c================================================================================================
+==========================================================================Slist.c================================================================================================
+==========================================================================Slist.c================================================================================================
+
 #include"SList.h"
 
 SListNode* BuySListNode(SLTDateType x) //新申请一个节点并初始化  之后再根据一系列操作连入链表！
@@ -136,4 +177,111 @@ void SListErase(SListNode** pplist, SListNode* pos)
 	free(pos);
 	pos = NULL;
 	
+}
+==========================================================================test.c================================================================================================
+==========================================================================test.c================================================================================================
+==========================================================================test.c================================================================================================
+#include"SList.h"
+
+
+void menu()
+{
+	printf("***************1.打印链表   2.头插数据*****************\n");
+	printf("***************3.尾插数据   4.头删数据*****************\n");
+	printf("***************5.尾删数据   6.插入数据*****************\n");
+	printf("***************7.删除链表   0.  退出  *****************\n");
+	printf("请选择:>");
+}
+
+int main()
+{
+	SListNode* plist = NULL;
+	int input = 999;
+	int x,pos;
+	while (input)
+	{
+		menu();
+		scanf("%d",&input);
+		switch (input)
+		{
+		case 1:
+			SListPrint(plist);
+			break;
+		case 2:
+			printf("请输入头插的数据,-1结束:> ");
+			while (1)
+			{
+				scanf("%d", &x);
+				if (x !=-1)
+				{
+					SListPushFront(&plist, x);
+				}
+				else
+					break;
+			}
+			SListPrint(plist);
+			
+			break;
+		case 3:
+			printf("请输入尾插的数据,-1结束:> ");
+			while (1)
+			{
+				scanf("%d", &x);
+				if (x !=-1)
+				{
+					SListPushBack(&plist, x);
+				}
+				else
+					break;
+			}
+			SListPrint(plist);
+			break;
+		case 4:
+			SListPopFront(&plist);
+			break;
+		case 5:
+			SListPopBack(&plist);
+			break;
+		case 6:
+			printf("请输入插入数据在链表某元素pos的位置,插入元素x ，以-1结束:> ");
+			while (1)
+			{
+				scanf("%d", &pos);
+				scanf("%d", &x);
+				if (pos !=-1)
+				{
+					SListNode* p = SListFind(plist,pos);
+					SListInsert(&plist,p, x);
+				}
+				else
+					break;
+			}
+			SListPrint(plist);
+			break;
+		case 7:
+			printf("请输入删除数据在链表某元素pos的位置,以-1 -1结束:> ");
+			while (1)
+			{
+				scanf("%d", &pos);
+				if (pos !=-1)
+				{
+					SListNode* p = SListFind(plist,pos);
+					SListErase(&plist,p);
+				}
+				else
+					break;
+			}
+			SListPrint(plist);
+
+			break;
+		
+		case 0:
+			printf("退出成功！\n");
+			break;
+		default:
+			printf("输入错误,请重新输入!\n");
+			break;
+		}
+			
+	}
 }
