@@ -80,6 +80,8 @@ void HeapDestory(Heap* hp)
 {
 	assert(hp);
 	free(hp->_a);
+	hp->_a = NULL;
+	hp->_capacity=hp->_size = 0;
 }
 void HeapPush(Heap* hp, HPDataType x)
 {
