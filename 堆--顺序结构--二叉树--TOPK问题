@@ -1,0 +1,285 @@
+
+
+============================================================Heap.h================================================================================================
+============================================================Heap.h================================================================================================
+============================================================Heap.h================================================================================================
+
+// 链式结构：表示队列 
+#pragma once
+#define _CRT_SECURE_NO_WARNINGS 1
+#include <stdio.h>
+#include <stdbool.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef int HPDataType;
+
+typedef struct Heap
+{
+	HPDataType* _a;
+	int _size;
+	int _capacity;
+}Heap;
+
+// 堆的构建
+void HeapCreate(Heap* hp, HPDataType* a, int n);
+// 堆的销毁
+void HeapDestory(Heap* hp);
+// 堆的插入
+void HeapPush(Heap* hp, HPDataType x);
+// 堆的删除
+void HeapPop(Heap* hp);
+// 取堆顶的数据
+HPDataType HeapTop(Heap* hp);
+// 堆的数据个数
+int HeapSize(Heap* hp);
+// 堆的判空
+int HeapEmpty(Heap* hp);
+void AdjustUp(Heap* hp, int child);
+void AdjustDown(int* arr, int n, int parent);
+
+// TopK问题：找出N个数里面最大/最小的前K个问题。
+// 比如：未央区排名前10的泡馍，西安交通大学王者荣耀排名前10的韩信，全国排名前10的李白。等等问题都是Topk问题，
+// 需要注意：
+// 找最大的前K个，建立K个数的小堆
+// 找最小的前K个，建立K个数的大堆
+void PrintTopK(int* a, int n, int k);
+void TestTopk(int k);
+
+
+
+
+============================================================Heap.c================================================================================================
+============================================================Heap.c================================================================================================
+============================================================Heap.c================================================================================================
+
+#include"Heap.h"
+void HeapCreate(Heap* hp, HPDataType* a, int n)
+{
+	assert(hp);
+	hp->_a = (HPDataType*)malloc(n*sizeof(HPDataType));
+	
+	hp->_size = hp->_capacity = n;
+
+	for (int i = 0;i<n; i++)
+	{
+		hp->_a[i] = a[i];
+	}
+	hp->_size = hp->_capacity = n;
+
+	for (int i = (n - 2) / 2; i >= 0; i--)
+	{
+		AdjustDown(hp->_a, n, i);
+	}
+
+	
+}
+
+void HeapDestory(Heap* hp)
+{
+	assert(hp);
+	free(hp->_a);
+}
+void HeapPush(Heap* hp, HPDataType x)
+{
+	assert(hp);
+	assert(!HeapEmpty(hp));
+	HPDataType* tmp;
+
+	if (hp->_capacity == hp->_size)//扩容
+	{
+		tmp = (HPDataType*)realloc(hp->_a,2*hp->_capacity*sizeof(HPDataType));
+		assert(tmp);
+		hp->_a = tmp;
+		hp->_capacity *= 2;
+	}
+	hp->_a[hp->_size] = x;
+	hp->_size++;
+
+	AdjustUp(hp, hp->_size-1);//此单线向上调整
+}
+
+
+
+
+void HeapPop(Heap* hp)//删跟元素
+{
+	assert(hp);
+
+	Swap(&hp->_a[0], &hp->_a[hp->_size-1]);//交换首尾
+	hp->_size--;//删掉尾
+	//向下调整 恢复堆
+	
+	AdjustDown(hp->_a,hp->_size,0);
+}
+
+HPDataType HeapTop(Heap* hp)
+{
+	return hp->_a[0];
+}
+
+int HeapSize(Heap* hp)
+{
+	return hp->_size;
+}
+
+void AdjustDown(int* arr, int n, int parent)//一次向下调整
+{
+
+	int leftchild = parent * 2 + 1;
+	while (leftchild < n)
+	{
+		if ((leftchild + 1 < n) && (arr[leftchild + 1] < arr[leftchild]))//此处if设计意为leftchild最后为孩子中小的一个
+		{
+			leftchild++;
+		}
+
+		if (arr[leftchild] < arr[parent])//大根堆
+		{
+			Swap(&arr[leftchild], &arr[parent]);
+			parent = leftchild;
+			leftchild = parent * 2 + 1;
+		}
+		else
+		{
+			break;
+		}
+
+	}
+
+
+}
+
+void AdjustUp(Heap* hp, int child)
+{
+	while (child >0)//此处特别注意！ 
+	{
+		if (hp->_a[child] < hp->_a[(child-1)/2])//大根堆
+		{
+			Swap(&hp->_a[child], &hp->_a[(child - 1) / 2]);
+			child = (child - 1) / 2;
+		}
+		else break;
+	}
+	
+}
+
+int HeapEmpty(Heap* hp)
+{
+	return hp->_size == 0;
+}
+
+
+void PrintTopK(int* a, int n, int k)//O(N*logK+K)此处思想 每次搞K大小的堆 搞个 小根堆（求topK）  把其他大于根顶的 全压进去 最后剩下k哥就是前k大的数据！
+{
+	Heap hp;
+	Heap* php = &hp;
+	HeapCreate(php, a, k);//先建一个K元素的小根堆  因为求topK
+	
+	{
+		for (int i = k; i < n; i++)
+			if (a[i] > php->_a[0])//每次和堆顶元素比较，大于堆顶元素，则删除堆顶元素，插入新的元素
+		{ 
+			HeapPop(php);
+			HeapPush(php, a[i]);
+		}
+	}
+	for (int i = 0; i < k; i++) printf("%d ",php->_a[i]);
+}
+
+void TestTopk(int k)
+{
+	int n = 10000;
+	int* a = (int*)malloc(sizeof(int) * n);
+	srand(time(0));
+	//随机生成10000个数存入数组，保证元素都小于1000000
+	for (size_t i = 0; i < n; ++i)
+	{
+		a[i] = rand() % 1000000;
+	}
+	//确定10个最大的数
+	a[5] = 1000000 + 1;
+	a[1231] = 1000000 + 2;
+	a[531] = 1000000 + 3;
+	a[5121] = 1000000 + 4;
+	a[115] = 1000000 + 5;
+	a[2335] = 1000000 + 6;
+	a[9999] = 1000000 + 7;
+	a[76] = 1000000 + 8;
+	a[423] = 1000000 + 9;
+	a[3144] = 1000000 + 10;
+
+	PrintTopK(a, n, k);
+
+}
+
+#include"Queue.h"
+
+
+
+
+
+void Swap(int* a, int* b)
+{
+	int tmp = *a;
+	*a = *b;
+	*b = tmp;
+}
+
+
+
+void HeapSort(int* arr, int n)
+{
+	//先建立小/大根堆！O(n)!!! //升序 则大根堆 因为要把root的最大值一次放在最后面 这样子排！
+	for (int i = (n-2) / 2; i >= 0  ; i--)
+	{
+		AdjustDown(arr,n,i);
+	}
+	//再每次Step一下 把root的最值和数组尾巴交换 再n长度减一！！ O(n*logN)!!
+	while (n>0)
+	{
+		AdjustDown(arr,n,0);
+		Swap(&arr[0],&arr[n-1]);
+		n--;
+	}
+}
+
+
+
+
+============================================================test.c================================================================================================
+============================================================test.c================================================================================================
+============================================================test.c================================================================================================
+int main()
+{
+	int arr[] = { 19,5,6,8,2,4,1,76 };
+	int k;
+	Heap hp;
+	Heap* php = &hp;
+	/*HeapCreate(php,arr,8);*/
+	/*for (int i = 0; i < php->_size; i++) printf("%d ", php->_a[i]);
+	printf("\n");
+	HeapPush(php,1);
+	HeapPush(php, 2);
+	HeapPush(php, 3);
+	for (int i = 0; i < php->_size; i++) printf("%d ", php->_a[i]);
+	printf("\n");
+	
+	HeapPop(php);
+	int n = HeapSize(php);
+	for (int i = 0; i < php->_size; i++) printf("%d ", php->_a[i]);
+	printf("\n");
+	printf("删一个后size:>%d\n",n);
+	int x = HeapTop(php);
+	printf("对顶元素:>%d\n",x);*/
+	printf("请输入top K>:");
+	scanf("%d",&k);
+	
+
+	TestTopk(k);
+
+	
+
+	return 0;
+}
