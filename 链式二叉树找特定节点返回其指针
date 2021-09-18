@@ -1,4 +1,4 @@
-//比较绕 画图
+//比较绕 画图 // //左边整体返回NULL了 然后回跳过if(left) 进入 右子树递归，若找到 则if（right返回） 否则 最后 跳过右子树的if（right） return NULL;——在当前右子树找
 struct TreeNode* BinaryTreeFind(struct TreeNode* root, int x)//难点再与递归返回值的处理 不像bool值那样搞个非真即假 那么简单
 {
     if (root == NULL) return NULL;
