@@ -1,0 +1,15 @@
+//比较绕 画图
+struct TreeNode* BinaryTreeFind(struct TreeNode* root, int x)//难点再与递归返回值的处理 不像bool值那样搞个非真即假 那么简单
+{
+    if (root == NULL) return NULL;
+    if (root->val == x) return root;
+    struct TreeNode* left = BinaryTreeFind(root->left, x);
+    if (left) return left;
+    //当前左子树找不到的情况下 在当前右子树找 巧妙地if只要找到 就会一直if(目标结点指针) return 目标结点指针;找不到的if（NULL）不会执行！
+    //假设中途找到 且没到底部NULL  就直接把这个节点往最开始return 了。。
+    struct TreeNode* right = BinaryTreeFind(root->right, x);
+    if (right) return right;
+    //return BinaryTreeFind(root->left,x) || BinaryTreeFind(root->right,x);
+    return NULL;
+
+}
