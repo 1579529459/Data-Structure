@@ -1,0 +1,20 @@
+递归分支思想
+
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     struct TreeNode *left;
+ *     struct TreeNode *right;
+ * };
+ */
+
+int maxDepth(struct TreeNode* root){
+    
+    if(root == NULL) return 0;
+    //return Max(maxDepth(root->left),maxDepth(root->right))+1;//相当于从最后NULL +1上一层再+1 到root    一层一层累计
+    int a = maxDepth(root->left)+1;
+    int b = maxDepth(root->right)+1;
+    return a>b?a：b；
+    
+}
