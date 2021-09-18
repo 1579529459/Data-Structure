@@ -1,0 +1,38 @@
+
+struct TreeNode {
+    int val;
+    struct TreeNode* left;
+    struct TreeNode* right;
+};
+
+struct TreeNode* Buy(int x)
+{
+    struct TreeNode* root = (struct TreeNode*)malloc(1*sizeof(struct TreeNode));
+    root->val = x;
+    root->left = NULL;
+    root->right = NULL;
+    return root;
+}
+
+
+int main()
+{
+    struct TreeNode *node1;
+    node1 = Buy(1);
+    struct TreeNode* node2;
+    node2 = Buy(2);
+    struct TreeNode* node3;
+    node3 = Buy(3);
+
+    node1->left = node2;
+    node1->right = node3;
+    struct TreeNode* root = node1;
+    int* rsize = 1;
+    preorderTraversal(root,rsize);
+
+
+
+
+
+    return 0;
+}
