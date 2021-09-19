@@ -1,0 +1,361 @@
+===========================================================Tree.h===========================================================================================================================================Tree.h================================================================================
+===========================================================Tree.h================================================================================
+===========================================================Tree.h================================================================================
+typedef char BTDataType;
+ 
+typedef struct BinaryTreeNode
+{
+	BTDataType _data;
+	struct BinaryTreeNode* _left;
+	struct BinaryTreeNode* _right;
+}BTNode;
+ 
+// 通过前序遍历的数组"ABD##E#H##CF##G##"构建二叉树
+BTNode* BinaryTreeCreate(BTDataType* a, int n, int* pi);
+// 二叉树销毁
+void BinaryTreeDestory(BTNode** root);
+// 二叉树节点个数
+int BinaryTreeSize(BTNode* root);
+// 二叉树叶子节点个数
+int BinaryTreeLeafSize(BTNode* root);
+// 二叉树第k层节点个数
+int BinaryTreeLevelKSize(BTNode* root, int k);
+// 二叉树查找值为x的节点
+BTNode* BinaryTreeFind(BTNode* root, BTDataType x);
+// 二叉树前序遍历 
+void BinaryTreePrevOrder(BTNode* root);
+// 二叉树中序遍历
+void BinaryTreeInOrder(BTNode* root);
+// 二叉树后序遍历
+void BinaryTreePostOrder(BTNode* root);
+// 层序遍历
+void BinaryTreeLevelOrder(BTNode* root);
+// 判断二叉树是否是完全二叉树
+int BinaryTreeComplete(BTNode* root);
+
+===========================================================Tree.c===========================================================================================================================================Tree.h================================================================================
+===========================================================Tree.c================================================================================
+===========================================================Tree.c================================================================================
+#include "game.h"
+
+void BinaryTreePrevOrder(BTNode* root)
+{
+	if (root == NULL)
+	{
+		printf("NULL ");
+		return;
+	}
+	BinaryTreePrevOrder(root->_left);
+	printf("%c ",root->_data);
+	BinaryTreePrevOrder(root->_right);
+}
+
+
+BTNode* BinaryTreeCreate(BTDataType* a, int n, int* pi)
+{
+	if (a[*pi] == '#' || *pi >= n)
+	{
+		(*pi)++;
+		return NULL;
+	}
+	BTNode* tmp = (BTNode*)malloc(sizeof(BTNode));
+	tmp->_data = a[(*pi)++];
+
+	tmp->_left = BinaryTreeCreate(a,n,pi);
+	tmp->_right = BinaryTreeCreate(a, n, pi);
+	
+	return tmp;
+}
+
+// 二叉树销毁
+void BinaryTreeDestory(BTNode** root)
+{
+	if (*root == NULL) return;
+	BinaryTreeDestory(&(*root)->_left);
+	BinaryTreeDestory(&(*root)->_right);
+
+	free(*root);
+	*root = NULL;
+}
+
+
+// 二叉树叶子节点个数
+int BinaryTreeLeafSize(BTNode* root)
+{
+	if (root == NULL) return 0;
+	if (root->_left == root->_right) return 1;
+	return BinaryTreeLeafSize(root->_left) + BinaryTreeLeafSize(root->_right);
+}
+
+
+// 二叉树第k层节点个数
+int BinaryTreeLevelKSize(BTNode* root, int k)
+{
+	if (root == NULL) return 0;
+	if (k == 1) return 1;
+	if (k == 2)
+	{
+		int i = 0;
+		if (root->_left != NULL) i++;
+		if (root->_right != NULL) i++;
+		return i;
+	}
+	int numleft = BinaryTreeLevelKSize(root->_left, k - 1);
+	int numright = BinaryTreeLevelKSize(root->_right, k - 1);
+	return numleft + numright;
+}
+
+// 二叉树查找值为x的节点
+BTNode* BinaryTreeFind(BTNode* root, BTDataType x)
+{
+	if (root == NULL) return NULL;
+	if (root->_data == x) return root;
+	BTNode* left = BinaryTreeFind(root->_left,x);
+	if (left) return left;
+	BTNode* right = BinaryTreeFind(root->_right, x);
+	if (right) return right;
+
+	return NULL;
+}
+
+
+
+
+void QueueInit(Queue* q)
+{
+	assert(q);
+	q->front = NULL;
+	q->tail = NULL;
+
+}
+// 队尾入队列 
+void QueuePush(Queue* q, QDataType data)
+{
+	assert(q);
+	QNode* newnode = (QNode*)malloc(sizeof(QNode));
+	assert(newnode);
+	newnode->data = data;
+	newnode->next = NULL;
+	if (q->front == NULL)
+	{
+		q->front = q->tail = newnode;
+	}
+	else
+	{
+
+		q->tail->next = newnode;
+		q->tail = newnode;
+	}
+}
+// 队头出队列 
+void QueuePop(Queue* q)
+{
+	assert(q);
+	assert(q->front);
+	if (q->front->next == NULL)//只有一个节点的特殊情况;
+	{
+		free(q->front);
+		q->front = q->tail = NULL;
+	}
+	else
+	{
+		Queue* next = q->front->next;
+		free(q->front);
+		q->front = next;
+	}
+
+
+}
+
+// 获取队列头部元素 
+QDataType QueueFront(Queue* q)
+{
+	assert(q);
+	assert(q->front);
+
+	return q->front->data;
+}
+// 获取队列队尾元素 
+QDataType QueueBack(Queue* q)
+{
+	assert(q);
+	assert(q->tail);
+	return q->tail->data;
+}
+
+// 获取队列中有效元素个数 
+int QueueSize(Queue* q)
+{
+	assert(q);
+	//return q->tail - q->front;
+	int size = 0;
+	QNode* cur = q->front;
+	while (cur)
+	{
+		size++;
+		cur = cur->next;
+	}
+	return size;
+}
+// 检测队列是否为空，如果为空返回非零结果，如果非空返回0 
+int QueueEmpty(Queue* q)
+{
+	assert(q);
+	return q->front == NULL;
+}
+
+// 销毁队列 
+void QueueDestroy(Queue* q)
+{
+	assert(q);
+	QNode* cur = q->front;
+	while (cur)
+	{
+		QNode* next = cur->next;
+		free(cur);
+		cur = next;
+	}
+	q->front = q->tail = NULL;
+}
+
+
+
+// 层序遍历 //队列push 和 pop的妙用
+
+void BinaryTreeLevelOrder(BTNode* root) //这是一层一层的  所以递归（深度优先）就不太好了，要广度优先
+{
+	Queue qu;
+	Queue* pq = &qu;
+	BTNode* cur;
+	QueueInit(pq);
+	
+	if (root)
+	{
+		QueuePush(pq, root);
+	}
+
+	while (!QueueEmpty(pq))
+	{
+		cur = QueueFront(pq);//对头
+		printf("%d ",cur->_data);
+		
+		if (cur->_left)
+		{
+			QueuePush(pq,cur->_left);
+		}
+		if (cur->_right)
+		{
+			QueuePush(pq, cur->_right);
+		}
+		QueuePop(pq);
+	}
+	QueueDestroy(pq);
+	
+
+}
+
+// 销毁队列 
+
+
+// 判断二叉树是否是完全二叉树  //利用层序  不同-> !!!!!这次把NULL也 入队列!!!!!! 然后 (cur)出!遇到NULL bradk 看后面的还有没有非空 则false
+int BinaryTreeComplete(BTNode* root)
+{
+	Queue qu;
+	Queue* pq = &qu; 
+	BTNode* cur;
+	QueueInit(pq);
+	int flag = 0;
+
+	QueuePush(pq, root);
+
+	while (!QueueEmpty(pq))
+	{
+		cur = QueueFront(pq);//对头
+		/*printf("%d ", cur->_data);*/
+		if (cur == NULL) break;
+		QueuePush(pq, cur->_left);
+		QueuePush(pq, cur->_right);
+		
+		QueuePop(pq);
+	}
+
+	while (!QueueEmpty(pq)) //之前while虽然遇到了 NULL 但是这就是他的top的data，但是Queue里依然有值的  所以非空 继续筛
+	{
+		cur = QueueFront(pq);
+		if (cur != NULL) return 0;
+		QueuePop(pq);
+	}
+
+	QueueDestroy(pq);
+	return 1;
+
+
+}
+===========================================================test.c===========================================================================================================================================Tree.h================================================================================
+===========================================================test.c================================================================================
+===========================================================test.c================================================================================
+#include "game.h"
+BTNode* node1;
+
+BTNode* node2;
+
+BTNode* node3;
+
+BTNode* node4;
+
+BTNode* node5;
+
+BTNode* node6;
+
+BTNode* node7;
+
+BTNode* Buy(int x)
+{
+    BTNode* root = (BTNode*)malloc(1 * sizeof(BTNode));
+    root->_data = x;
+    root->_left = NULL;
+    root->_right = NULL;
+    return root;
+}
+
+
+
+int main()
+{
+	//char* s = "abc##de#g##f###";	
+	//int pi = 0;
+	//BTNode* tmp =BinaryTreeCreate(s,strlen(s),&pi);
+	//BinaryTreePrevOrder(tmp);
+	//BinaryTreeDestory(&tmp);
+	//BinaryTreePrevOrder(tmp);
+    
+
+    node1 = Buy(4);
+
+    node2 = Buy(2);
+
+    node3 = Buy(7);
+
+    node4 = Buy(1);
+
+    node5 = Buy(3);
+
+    node6 = Buy(9);
+
+    node7 = Buy(6);
+
+    node1->_left = node2;
+
+    node1->_right = node3;
+   
+    node2->_left = node4;
+    node2->_right = node5;
+    //node3->_left = node6;
+    //node3->_right = node7;
+
+    printf("%d\n", BinaryTreeComplete(node1));
+    
+
+	return 0;
+}
+
