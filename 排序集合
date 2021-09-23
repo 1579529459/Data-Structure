@@ -1,0 +1,594 @@
+===============================================================Header.h=========================================================================================
+===============================================================Header.h=========================================================================================
+#pragma once
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <time.h>
+
+
+// 支持动态增长的栈
+typedef int STDataType;
+typedef struct Stack
+{
+	STDataType* a;
+	int top;		// 栈顶
+	int capacity;  // 容量 
+}Stack;
+// 初始化栈 
+void StackInit(Stack* ps);
+// 入栈 
+void StackPush(Stack* ps, STDataType data);
+// 出栈 
+void StackPop(Stack* ps);
+// 获取栈顶元素 
+STDataType StackTop(Stack* ps);
+// 获取栈中有效元素个数 
+int StackSize(Stack* ps);
+// 检测栈是否为空，如果为空返回非零结果，如果不为空返回0 
+int StackEmpty(Stack* ps);
+// 销毁栈 
+
+void StackDestroy(Stack* ps);
+
+
+
+
+
+
+
+
+void Print(int* arr, int n);
+// 插入排序
+void InsertSort(int* a, int n);
+
+// 希尔排序
+void ShellSort(int* a, int n);
+
+
+// 选择排序
+void SelectSort(int* a, int n);
+
+
+// 堆排序
+void AdjustDwon(int* a, int n, int root);
+void HeapSort(int* a, int n);
+
+
+// 冒泡排序
+void BubbleSort(int* a, int n);
+
+// 快速排序递归实现
+// 快速排序hoare版本
+int PartSort1(int* a, int left, int right);
+// 快速排序挖坑法
+int PartSort2(int* a, int left, int right);
+// 快速排序前后指针法
+int PartSort3(int* a, int left, int right);
+void QuickSort(int* a, int left, int right);
+
+// 快速排序 非递归实现
+void QuickSortNonR(int* a, int left, int right);
+
+// 归并排序递归实现
+void MergeSort(int* a, int n, int left, int right);
+// 归并排序非递归实现
+//void MergeSortNonR(int* a, int n); 下次一定
+
+
+void _MergeSort(int* a, int n, int* tmp, int left, int right);
+
+
+// 计数排序
+void CountSort(int* a, int n);
+===============================================================fun.c=========================================================================================
+===============================================================fun.c=========================================================================================
+#include"header.h"
+//三数取中 防止快排遇到顺序极端情况 变成O（n……2）
+int GetMidIndex(int* a, int begin, int end)
+{
+	int mid = begin + ((end - begin) >> 1);
+	if (a[begin] < a[mid])
+	{
+		if (a[mid] < a[end])
+		{
+			return mid;
+		}
+		else if (a[begin] > a[end])
+		{
+			return begin;
+		}
+		else
+		{
+			return end;
+		}
+	}
+	else // begin >= mid
+	{
+		if (a[mid] > a[end])
+		{
+			return mid;
+		}
+		else if (a[begin] < a[end])
+		{
+			return begin;
+		}
+		else
+		{
+			return end;
+		}
+	}
+
+}
+
+void Swap(int *a,int *b)
+{
+	int tmp = *a;
+	*a = *b;
+	*b = tmp;
+}
+//插入排序
+void InsertSort(int* a, int n)
+{
+
+
+
+	for (int i = 0; i < n - 1; i++)
+	{
+		int end = i;
+		int tmp = a[end + 1];
+		while (end >= 0)//注意这里的》=  否则 前两个数字可能漏掉大小关系
+		{
+			if (a[end] > tmp)
+			{
+				a[end + 1] = a[end];
+				end--;
+			}
+			else break;
+		}
+		a[end + 1] = tmp;
+		/*while (end >= 0 && a[end] > tmp)
+		{
+			a[end + 1] = a[end];
+			--end;
+		}
+		a[end + 1] = tmp;*/
+	}
+
+}
+
+
+// 希尔排序  //插入多个while 而且1换gap
+void ShellSort(int* a, int n)
+{
+	int gap = n;
+	while (gap > 1)
+	{
+		gap = gap / 3 + 1; //保证最后一次gap为1  则完成 最后一次插入
+		for (int i = 0; i < n - gap; i++)//-gap 是防止越界
+		{
+			int end = i;
+			int tmp = a[end + gap];
+			while (end > 0)
+			{
+				if (a[end] > tmp)
+				{
+					a[end + gap] = a[end];
+					end -= gap;
+				}
+				else break;
+			}
+			a[end + gap] = tmp;
+		}
+	}
+
+
+}
+
+
+// 选择排序 （双头操作！快一倍但是有bug）
+void SelectSort(int* a, int n)//最垃圾的简单排序;
+{
+	////首元素下标;
+	//int begin = 0;
+	//while (n)
+	//{
+	//	int min = 0; //最小值的下表 后面Swap要换数组两元素的地址！！
+	//	for (int i = begin; i < n; i++)  //每次插入排序在 begin 到 n-1下标区间操作的！
+	//	{
+	//		if (a[i] < a[min])
+	//		{
+	//			min = i;
+	//		}
+	//	}
+	//	//出到这里 min为最min
+	//	Swap(&a[min],&a[begin]);
+	//	n--;
+	//}	
+
+
+	//优化版本 每次左右搞一个最大和最小 ， 效率翻倍 但是多了一个小情况讨论下
+	int begin = 0;
+	int end = n - 1;
+	while (begin < end)
+	{
+		int min = begin;//最大和最小元素的下标
+		int max = begin;
+
+
+		for (int i = begin; i <= end; i++)//每次while在此正在缩小的区间上进行排序 注意这里的i<=end 因为end最开始初始n-1了！
+		{
+			if (a[i] < a[min]) min = i;
+			if (a[i] > a[max]) max = i;
+		}
+		Swap(&a[min], &a[begin]);
+		if (max == begin) max = min; //双头的 end==begin的bug处理 这就是双头方便了 但是存在小毛病，，，。
+		Swap(&a[max], &a[end]);
+
+
+
+
+
+
+
+
+		begin++;
+		end--;
+	}
+
+
+}
+
+
+
+
+// 堆排序 (前提 一个数组假装顺序 存 在 一个 树 中)
+//向下调整(大堆版)
+void AdjustDown(int* a, int n, int root)
+{
+	int parent = root;
+	int child = parent * 2 + 1;//child 开始是parent的左子树
+	while (child < n)
+	{
+		if (child + 1 < n && a[child] < a[child + 1]) child++; //搞出左右孩子 较大的 和parent比较
+
+
+		if (a[child] > a[parent])
+		{
+			Swap(&a[child], &a[parent]);
+			parent = child;
+			child = parent * 2 + 1;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+}
+
+
+void HeapSort(int* a, int n)
+{
+	//升序  搞大根堆  
+
+	//从最后一个结点的父亲开始 建大堆;
+	for (int i = n - 1 - 1 / 2; i >= 0; i--)  //O（n）
+	{
+		AdjustDown(a, n, i);
+	}
+
+	//每次把顶移到尾巴 然后假装堆少一个元素 则每次拍好一个元素，反复循环;
+
+
+	while (n > 1)//n>1?
+	{
+		int end = n - 1;
+		Swap(&a[0], &a[end]);
+		AdjustDown(a, end, 0);
+		n--;
+	}
+
+
+}
+
+
+void Print(int* a, int n)
+{
+	for (int i = 0; i < n; i++) printf("%d ",a[i]);
+	printf("\n");
+}
+
+
+// 冒泡排序(思想:相邻两个比，挑出需要挪动的往后挪动，每趟可以把最大的一个数挪到最后，然后不管它)
+void BubbleSort(int* a, int n)
+{
+	int i = 0;
+	for (i = 0; i < n - 1; i++)//一共n-1趟即可 最前面一个就是最小（大）的了
+	{
+		int j = 0;
+		int flag = 0;//若j循环外  flag还是0 则直接break 一种优化！
+		for (j = 0; j < n - 1 - i; j++) //下一趟就不用比上一趟挪到最后的元素了
+		{
+			if (a[j] > a[j + 1])
+			{
+				Swap(&a[j],&a[j+1]);
+				flag = 1;
+			}
+		}
+		if (j == 0) break;
+	}
+}
+
+// 快速排序递归实现
+// PartSort是子过程；
+
+
+void QuickSort(int* a, int left, int right)
+{
+	if (left >= right) return;
+	int k = PartSort3(a,left,right);//先一次  再分左右区间分治)
+	
+	QuickSort(a, left, k - 1);
+	QuickSort(a, k + 1, right);
+	
+}
+// 快速排序hoare版本 条件麻烦，不推荐使用
+
+int PartSort1(int* a, int left, int right) //返回的int  用来下次分治卡左右下标
+{
+	int y = GetMidIndex(a,left,right);                                                                
+	Swap(&a[y],&a[left]); //将中间数 a[y] 调到子序列首 作为基准！最后一部是 基准插入left==right点 再以基准分治
+	int tmp = left;
+	int x = a[left];
+	while (left < right)
+	{
+		while (left < right && a[right]>=x)//条件挺苛刻的 不然有bug(目标值选的a【left】则先走right)
+		{
+			right--;
+		}
+		while (left < right&&a[left] <= x)
+		{
+			left++;
+		}
+		Swap(&a[left],&a[right]);
+	}
+	//while挑出可以保证 left==right 而且a[left] 是 子区间中的min(升序情况)
+	Swap(&a[tmp],&a[left]);
+	return left;  //返回left 用于下一子区间的 左右 分割点
+}
+
+// 快速排序挖坑法
+int PartSort2(int* a, int left, int right)
+{
+
+	int y = GetMidIndex(a, left, right);
+	Swap(&a[y],&a[left]);
+	//取出一个基准数据存起来  然后把该位置变成坑 找符合大小关系的填进去，然后填的原位置又成新的坑  最后把基准插入最后的坑 则子序列左右排好
+	int tmp = left; //首坑位置 tmp == hole == 坑 的下标
+	int x = a[tmp];//基准数据
+  	while (left < right)
+	{
+		while (left < right && a[right] >= x)//注意left < right  防止left right移动中错开 则卡出来再换就不满足 算法 左右双序思想了
+		{
+			right-- ;
+		}
+		a[tmp] = a[right];
+		tmp = right;
+		while (left < right && a[left] <= x)
+		{
+			left++;
+		}
+		a[tmp] = a[left];
+		tmp = left;
+	}
+	a[left] = x;
+	return left;
+}
+
+// 快速排序前端双指针扫描法   //取左端为 基准值
+int PartSort3(int* a, int left, int right)
+{
+	int mid = GetMidIndex(a, left, right);//三数取中 防止顺序情况下快排的 O(n^2)
+	Swap(&a[mid],&a[left]);
+	int prev = left;
+	int cur = prev + 1;
+	int keyi = prev;
+	int tmp = a[keyi];
+	while (cur <=right) //画图看  注意此处《=这个条件 否则会忽略最后一个 如果最后一个恰好为<tmp 则 tmp插入后 最右边这个就比他小 这样就不对了
+	{		
+		if (a[cur]<tmp&&cur!=++prev)
+		{
+			Swap(&a[prev], &a[cur]);
+		}
+		cur++;
+	}
+	Swap(&a[prev], &a[keyi]);
+	return prev;
+}
+
+
+// 快速排序 非递归实现   (一般的循环替代不了的递归，我们要借助栈(堆区挺大的)  来模拟递归划分子区间 )
+void QuickSortNonR(int* a, int left, int right)
+{
+	Stack st;
+	StackInit(&st);
+	StackPush(&st, right); //栈 先进后出 先分治左区间 所以先把右标压底
+	StackPush(&st, left);
+	while (!StackEmpty(&st))
+	{
+		left = StackTop(&st);
+		StackPop(&st);
+		right = StackTop(&st);
+		StackPop(&st);
+		int keyi = PartSort3(a,left,right);
+		//递归划分   [left keyi-1 (左子区间)    keyi(不用管 排好的数字)  keyi+1 right(右子区间)]
+		if (keyi+1<right)//判断条件很妙啊  若上次排列完 keyi在最后的位置（keyi+1>right）或者 倒数第二个位置(keyi+1==right) 这两种情况 都是这个大区间排好了 不用再划分分治了
+		{
+			StackPush(&st,right);
+			StackPush(&st, keyi+1);
+		}
+		if (left<keyi-1)
+		{
+			StackPush(&st, keyi-1);
+			StackPush(&st, left);
+		}
+	}
+
+	StackDestroy(&st);
+}
+
+// 归并排序递归实现    分治思想 先递归到底 后归并
+void MergeSort(int* a, int n,int left,int right)
+{
+	int* tmp = (int*)malloc(sizeof(int)*n); //临时数组 它用来临时存放二路归并
+	_MergeSort(a,n,tmp,left,right);
+	free(tmp);
+}
+
+void _MergeSort(int* a, int n, int* tmp,int left,int right)
+{
+	//递归 就有出递归的条件
+	if (left >= right) return;
+	int mid = left + right >> 1;
+	_MergeSort(a,n,tmp,left,mid);
+	_MergeSort(a, n, tmp, mid+1,right);
+	int begin1 = left;
+	int begin2 = mid + 1;
+	int j = 0;
+	while (begin1 <= mid && begin2 <= right)
+	{
+		if (a[begin1] <= a[begin2])
+		{
+			tmp[j++] = a[begin1++];
+		}
+		else
+		{
+			tmp[j++] = a[begin2++];
+		}
+	}
+	while (begin1 <= mid)
+	{
+		tmp[j++] = a[begin1++];
+	}
+	while (begin2 <= right)
+	{
+		tmp[j++]=a[begin2++];
+	}
+	//最后把归并好的子序列（left mid 和 mid+1 right合并好了的） 搞到原数组的对应位置 [left，right]
+	for (int i = left,j = 0; i <= right; i++)
+	{
+		a[i] = tmp[j++];
+	}
+	//memcpy(a+left, tmp+left, sizeof(int)*(right - left+1));  还可以这样=-=-
+}
+
+
+
+// 计数排序  //利用映射数组计数。 做了巧妙的优化防止大段空间浪费.
+
+
+// O(Max(N, 范围))
+// O(N+范围) 时间复杂度
+// O(范围) 空间复杂度
+
+
+void CountSort(int* a, int n)//int arr[] = {3,1,2,4,6,8,99,5,6,2};
+{
+	int min = a[0];
+	int max = a[0];
+	//先扫描一遍 搞出原序列种的max 和 min //方便后面calloc不浪费太多的空间，，。，
+	for (int i = 0; i < n; i++)
+	{
+		if (a[i] < min) min = a[i];
+		if (a[i] > max)max = a[i];
+	}
+	//此处可以搞个 int range = max-min+1;  后续开tmp临时数组 和 
+	int* tmp = (int*)calloc(max - min + 1, sizeof(int));//max-min+1为源列表的range数据范围个数 eg 1000~1099  有100种可能情况
+
+	//计数
+	for (int i = 0; i < n; i++)
+	{
+		tmp[a[i]-min]++;//存入tmp的 相对位置  省两头空间！
+	}
+	
+	//覆盖到原a中完成排序
+	for (int i = 0,j = 0;i < max - min + 1; i++)
+	{
+		while (tmp[i])
+		{
+			a[j++] = min+i; //注意这里a的[]是 j++  ，因为有的tmp[i]还是0  （计数为0因为min+i这个值在原数组未出现） 所以跳过这个i了 用a[I++]的话 就会出现间隔，排好序的a可是升序切连续的，。。，。，
+			tmp[i]--;
+		}
+	}
+	free(tmp);
+}
+
+===============================================================Stack.c=========================================================================================非递归模拟递归的快排需要用
+===============================================================Stack.c=========================================================================================
+#include"header.h"
+int StackEmpty(Stack* ps)//1 真 0 假
+{
+	assert(ps);
+	return ps->top == 0;
+}
+void StackDestroy(Stack* ps);
+
+
+
+//top 为 0 时    栈代表空
+void ChickStack(Stack* ps)
+{
+	if (ps->capacity == ps->top)
+	{
+		Stack* tmp = (STDataType*)realloc(ps->a, ps->capacity * 2 * sizeof(STDataType));
+		assert(tmp);
+		ps->a = tmp;
+		ps->capacity *= 2;
+	}
+}
+
+void StackInit(Stack* ps)
+{
+	ps->a = (STDataType*)malloc(sizeof(STDataType) * 4);
+	ps->capacity = 4;
+	ps->top = 0;
+}
+
+// 入栈 
+void StackPush(Stack* ps, STDataType data)
+{
+	assert(ps);
+	ChickStack(ps);
+	ps->a[ps->top] = data;
+	ps->top++;
+}
+// 出栈 
+void StackPop(Stack* ps)
+{
+	assert(ps);
+	if (ps->top > 0) ps->top--;
+
+}
+// 获取栈顶元素 
+STDataType StackTop(Stack* ps)
+{
+	assert(ps);
+	assert(ps->top > 0);
+	return ps->a[ps->top - 1];
+
+}
+
+
+
+void StackDestroy(Stack* ps)
+{
+	assert(ps);
+	ps->top = 0;
+	free(ps->a);
+	ps->a = NULL;
+	ps->capacity = 0;
+}
+
+aa
