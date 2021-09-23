@@ -204,6 +204,7 @@ void SelectSort(int* a, int n)//最垃圾的简单排序;
 	//	}
 	//	//出到这里 min为最min
 	//	Swap(&a[min],&a[begin]);
+	// 	begin++;
 	//	n--;
 	//}	
 
