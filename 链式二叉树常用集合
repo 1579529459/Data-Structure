@@ -253,7 +253,33 @@ void BinaryTreeLevelOrder(BTNode* root) //这是一层一层的  所以递归（
 	
 
 }
-
+//非递归 中序遍历(前序 修改下cout输出的位置就行)
+//中序遍历
+void InOrderWithoutRecursion2(BTNode* root)
+{
+    //空树
+    if (root == NULL)
+        return;
+    //树非空
+    BTNode* p = root;
+    stack<BTNode*> s;
+    while (!s.empty() || p)
+    {
+        if (p)
+        {
+            s.push(p);
+	    //1位置;
+            p = p->lchild;
+        }
+        else
+        {
+            p = s.top();
+            s.pop();
+            cout << setw(4) << p->data;// 前序只需要把这个改到1位置
+            p = p->rchild;
+        }
+    }
+}
 // 销毁队列 
 
 
