@@ -1,0 +1,267 @@
+#include<iostream>
+using namespace std;
+
+
+
+//节点//节点//节点//节点//节点//节点//节点//节点//节点//节点
+template<class K, class V>
+struct BSTreeNode
+{
+	BSTreeNode<K, V>* _left;
+	BSTreeNode<K, V>* _right;
+	K _key;
+	V _value;
+
+
+	BSTreeNode(const K& key, const V& value)
+		:_left(nullptr)
+		, _right(nullptr)
+		, _key(key)
+		, _value(value)
+	{}
+};
+
+
+//主树//主树//主树//主树//主树//主树//主树//主树//主树//主树//主树//主树//主树//主树
+template<class K, class V>
+class BSTree //二叉搜索树;
+{
+	typedef BSTreeNode<K, V> Node;
+public:
+	bool Insert(const K& key, const V& value)//同Key只能插1个
+	{
+		auto newnode = new Node(key, value);
+		if (_root == nullptr)
+		{
+			_root = newnode;
+			return true;
+		}
+		else
+		{
+			Node* cur = _root;
+			Node* parent = nullptr;
+			while (cur != nullptr)
+			{
+				if (cur->_key < key)
+				{
+					parent = cur;
+					cur = cur->_right;
+				}
+				else if (cur->_key > key)
+				{
+					parent = cur;
+					cur = cur->_left;
+				}
+				else
+					return false;
+			}
+			//这里找到插入位置cur何parent了;
+			auto newnode = new Node(key, value);
+	
+			if (parent->_key < key)
+			{
+				parent->_right = newnode;
+			}
+			else
+			{
+				parent->_left = newnode;
+			}
+			return true;
+		}
+	}
+	Node* Find(const K& key)
+	{
+		if (_root == nullptr) return nullptr;
+		Node* cur = _root;
+		while (cur)
+		{
+			if (cur->_key == key)
+			{	
+				return cur;
+			}
+			else if (cur->_key < key)
+			{
+				cur = cur->_right;
+			}
+			else
+			{
+				cur = cur->_left;
+			}
+		}
+		return nullptr;
+
+	}
+
+	bool Erase(const K& key)
+	{
+		//1.非满孩子的节点;
+		//2.有俩孩子的节点;
+		Node* cur = _root;
+		Node* parent = cur;
+
+		
+		//找到要删的节点;
+		while (cur)
+		{
+			if (cur->_key < key)
+			{
+				parent = cur;
+				cur = cur->_right;
+			}
+			else if (cur->_key > key)
+			{
+				parent = cur;
+				cur = cur->_left;
+			}
+			else//命中待删除的节点cur还有他的parent
+			{
+				//1.非满孩子的节点的删除;
+				
+				if (cur->_left == nullptr)//特殊情况 删头
+				{
+					if (_root->_key == cur->_key)
+					{
+						_root = cur->_right;
+					}
+
+					else
+					{
+						if (parent->_key < cur->_key)//(parent->_right==cur)这样写明了;
+						{
+							parent->_right = cur->_right;
+						}
+						else
+						{
+							parent->_left = cur->_right;
+						}
+					}
+					delete cur;
+					return true;
+				}
+				else if (cur->_right == nullptr)
+				{
+					if (_root->_key == cur->_key)//特殊情况 删头
+					{
+						_root = cur->_left;
+						
+					}
+					else
+					{
+						if (parent->_key < cur->_key)//(parent->_right==cur)这样写明了;
+						{
+							parent->_right = cur->_left;
+						}
+						else
+						{
+							parent->_left = cur->_left;
+						}
+					}
+					
+				}
+				else//待删除节点cur左右都不为空;
+				{
+					// 替换法删除  左树的最大节点(最右节点) 或者是右树的最小节点(最左节点)
+					// 
+					//默认用右最小的替换;
+					
+					//找右边最小(_left一定为nullptr)和他的父;
+					Node* rmin = cur->_right;
+					Node* rparent = cur;
+					while (rmin->_left != nullptr)
+					{
+						rparent = rmin;
+						rmin = rmin->_left;
+					}
+
+					//特殊情况;
+					if (rparent->_key < rmin->_key)//(rparent->_right==rmin)这样写明了;
+					{
+						rparent->_right = rmin->_right;
+					}
+					else
+					{
+						rparent->_left = rmin->_right;
+					}
+
+					cur->_key = rmin->_key;
+					cur->_value = rmin->_value;
+					
+					delete rmin;
+				}
+				return true;
+			}
+		}
+		return false;
+
+		
+	}
+
+	void InOrder()//中序遍历
+	{
+		_InOrder(_root);
+	}
+
+
+	void _InOrder(Node* root)//中序遍历
+	{
+		if (root == nullptr) return;
+		_InOrder(root->_left);
+		cout << root->_key << ":" << root->_value << endl;
+		_InOrder(root->_right);
+	}
+	
+	
+private:
+	Node* _root = nullptr;
+	
+	
+};
+
+void TestBSTree()
+{
+	string strs[] = { "苹果", "西瓜", "苹果", "樱桃", "苹果", "樱桃", "苹果", "樱桃", "苹果" };
+	// 统计水果出现的次
+	BSTree<string, int> countTree;
+	for (auto str : strs)
+	{
+		auto ret = countTree.Find(str);
+		if (ret == NULL)
+		{
+			countTree.Insert(str, 1);
+		}
+		else
+		{
+			ret->_value++;
+		}
+	}
+	countTree.InOrder();
+	BSTree<string, string> dict;
+	dict.Insert("insert", "插入");
+	dict.Insert("erase", "删除");
+	dict.Insert("left", "左边");
+	dict.Insert("string", "字符串");
+
+	string str;
+	while (cin >> str)
+	{
+		auto ret = dict.Find(str);
+		if (ret)
+		{
+			cout << str << ":" << ret->_value << endl;
+		}
+		else
+		{
+			cout << "单词拼写错误" << endl;
+		}
+	}
+
+	
+}
+int main()
+{
+	
+	TestBSTree();
+	
+	
+	return 0;
+}
