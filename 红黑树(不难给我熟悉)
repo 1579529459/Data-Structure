@@ -1,0 +1,390 @@
+#include<iostream>
+#include<map>
+#include<set>
+#include<algorithm>
+#include<vector>
+using namespace std;
+
+
+
+enum Color { RED, BLACK };
+
+template<class T>
+struct RBTreeNode
+{
+	RBTreeNode(const T& data = T(), Color color = RED)
+		: _pLeft(nullptr)
+		, _pRight(nullptr)
+		, _pParent(nullptr)
+		, _data(data)
+		, _color(color)
+	{}
+
+	RBTreeNode<T>* _pLeft;
+	RBTreeNode<T>* _pRight;
+	RBTreeNode<T>* _pParent;
+	T _data;
+	Color _color;
+};
+
+
+
+
+
+
+// 请模拟实现红黑树的插入--注意：为了后序封装map和set，本文在实现时给红黑树多增加了一个头结点
+template<class T>
+class RBTree
+{
+	typedef RBTreeNode<T> Node;
+public:
+	RBTree()
+	{
+		_pHead = nullptr;
+	}
+
+	// 在红黑树中插入值为data的节点，插入成功返回true，否则返回false
+	// 注意：为了简单起见，本次实现红黑树不存储重复性元素
+	bool Insert(const T& data)
+	{
+		Node* newnode = new Node(data);
+		if (_pHead == nullptr)
+		{
+			_pHead = newnode;
+			_pHead->_color = BLACK;
+			return true;
+		}
+		Node* cur = _pHead;
+		Node* parent = cur;
+		while (cur)
+		{
+			if (cur->_data > data)
+			{
+				parent = cur;
+				cur = cur->_pLeft;
+			}
+
+			else if (cur->_data < data)
+			{
+				parent = cur;
+				cur = cur->_pRight;
+			}
+			//_data == data
+			else
+			{
+				delete newnode;
+				return false;
+			}
+		}
+		//待插入位置cur 父亲parent
+		cur = newnode;
+		if (parent->_data < data)
+			parent->_pRight = newnode;
+		else
+			parent->_pLeft = newnode;
+		cur->_pParent = parent;
+
+		//更新red-black-tree近似平衡（看图2种情况）;
+		// 	//case:1.c红p红g黑u存在且为红(关键看叔叔) 叔叔可能不存在噢 防止nullptr引用;
+		// //case2:.c红 p红 g黑 u存在且为黑 OR u不存在(关键看叔叔)有单旋和双旋，并且与u在左or右有关 分情况讨论
+		
+
+		
+		//解决:p,u改黑g改红，循环改色(改完可能又俩red连起来了 之前的g(黑改红了)和g的parent ,特例g之前为root，g的parent是null了;	
+		Node* p = parent;//都改成首字母方便使用和统一;
+		Node* g;
+		Node* u;
+		while (p && p->_color == RED)//前条件形成red-red的case1
+		{
+			g= p->_pParent;
+			//可能u左p右 or u在右p在左，牵扯2，3情况的旋转方向;
+			if (g->_pLeft == p)
+			{
+				u = g->_pRight;
+				//case:1.c红p红g黑u存在且为红(关键看叔叔) 叔叔可能不存在噢 防止nullptr引用;
+				if (u && u->_color == RED)
+				{
+					p->_color = BLACK;
+					u->_color = BLACK;
+					g->_color = RED;
+					cur = g;
+					p = cur->_pParent;	
+				}
+
+				//----------------------2/3都有先经过1转来的特例 所以包1while里 但是走了2，3根变黑，则不需要了直接跳出
+				//case2:.c红 p红 g黑 u存在且为黑 OR u不存在(关键看叔叔)
+				//解决:旋转(可能双旋,而且u在左还是在右分情况讨论)
+				else
+				{
+					//<左左>右单旋;
+					if (p->_pLeft == cur)
+					{
+						RotateR(g);
+						//(p拉上去成root了,所以p改黑，g改红 颜色互换 cur不牵扯变色)
+						g->_color = RED;
+						p->_color = BLACK;
+					}
+					//<左右折线>左右双旋
+					else
+					{
+						RotateL(p);
+						RotateR(g);
+						//双旋是吧cur提上去的 cur牵扯变色了 所以cur变black 剩下俩变红
+						cur->_color = BLACK;
+						g->_color = RED;
+					}
+					break;
+				}
+			}
+
+			else//g->_pRight == p
+			{
+				u = g->_pLeft;
+				//case:1
+				if (u && u->_color == RED)
+				{
+					p->_color = BLACK;
+					u->_color = BLACK;
+					g->_color = RED;
+					cur = g;
+					p = cur->_pParent;
+				}
+				//----------------------2/3都有先经过1转来的特例 所以包1while里 但是走了2，3根变黑，则不需要了直接跳出
+				//case2:
+				else
+				{
+					//<右右>左单旋
+					if (p->_pRight == cur)
+					{
+						RotateL(g);
+						//(p拉上去成root了,所以p改黑，g改红 颜色互换 cur不牵扯变色)
+						g->_color = RED;
+						p->_color = BLACK;
+					}
+					////<右左>左右单旋
+					else
+					{
+						RotateR(p);
+						RotateL(g);
+						//双旋是吧cur提上去的 cur牵扯变色了 所以cur变black 剩下俩变红
+						cur->_color = BLACK;
+						g->_color = RED;
+					}
+					break;
+				}
+
+			}
+		}
+		
+			
+		//暴力置换防止a一考试g是root又被改红
+		_pHead->_color = BLACK;
+		return true;
+		
+	}
+
+	// 检测红黑树中是否存在值为data的节点，存在返回该节点的地址，否则返回nullptr
+	Node* Find(const T& data)
+	{
+		Node* cur = _pHead;
+		Node* parent = cur;
+		while (cur)
+		{
+			if (cur->_data > data)
+			{
+				parent = cur;
+				cur = cur->_pLeft;
+			}
+
+			else if (cur->_data < data)
+			{
+				parent = cur;
+				cur = cur->_pRight;
+			}
+			//_data == data
+			else
+				break;
+
+		}
+		return cur;
+	}
+
+	// 获取红黑树最左侧节点
+	Node* LeftMost()
+	{
+		if (_pHead == nullptr)
+			return nullptr;
+		Node* cur = _pHead;
+		Node* ret = cur;
+		while (cur)
+		{
+			ret = cur;
+			cur = cur->_pLeft;
+		}
+		return ret;
+	}
+
+	// 获取红黑树最右侧节点
+	Node* RightMost()
+	{
+		if (_pHead == nullptr)
+			return nullptr;
+		Node* cur = _pHead;
+		Node* ret = cur;
+		while (cur)
+		{
+			ret = cur;
+			cur = cur->_pRight;
+		}
+		return ret;
+
+	}
+
+	// 检测红黑树是否为有效的红黑树，注意：其内部主要依靠_IsValidRBTRee函数检测
+	bool IsValidRBTRee()
+	{
+		if (_pHead == nullptr)
+			return true;
+		//1.root是黑
+		if (_pHead->_color == RED)
+			return false;
+
+		Node* cur = _pHead;
+		int blackCount = 0;
+		//对比路径black基准值(默认最左)
+		int pathBlack = 0;
+		while (cur)
+		{
+			if (cur->_color == BLACK)
+				pathBlack++;
+			cur = cur->_pLeft;
+		}
+		return _IsValidRBTRee(_pHead, blackCount, pathBlack);
+	}
+	
+	void InOrder()
+	{
+		_InOrder(_pHead);
+		cout << endl;
+	}
+private:
+	void _InOrder(Node* root)
+	{
+		if (root == nullptr)
+		{
+			return;
+		}
+
+		_InOrder(root->_pLeft);
+		cout << root->_data << " ";
+		_InOrder(root->_pRight);
+	}
+
+	bool _IsValidRBTRee(Node* pRoot, size_t blackCount, size_t pathBlack)
+	{
+		if (pRoot == nullptr)
+		{
+			//3.防止某一路径blacknum不对情况(单条路径递归完与pathBlack做对比)
+			if (blackCount != pathBlack)
+				return false;
+			else
+				return true;
+		}
+		//2.防止red->red情况
+		if (pRoot->_color == RED)
+		{
+			if(pRoot->_pParent->_color==RED)
+				return false;
+		}
+		//3.
+		else
+		{
+			blackCount++;
+		}
+		return _IsValidRBTRee(pRoot->_pLeft, blackCount, pathBlack)
+			&& _IsValidRBTRee(pRoot->_pRight, blackCount, pathBlack);
+	}
+
+	// 左单旋
+	void RotateL(Node* pParent)
+	{
+		Node* proot = pParent->_pParent;//链接整体子树
+		Node* pR = pParent->_pRight;
+
+		pParent->_pRight = pR->_pLeft;
+		if (pR->_pLeft)
+			pR->_pLeft->_pParent = pParent;
+
+		pR->_pLeft = pParent;
+		pParent->_pParent = pR;
+		//不是AVL树 所以不用更新平衡因子噢;'
+
+		//特殊情况;
+		if (proot == nullptr)
+			_pHead = pR;
+		else
+		{
+			if (proot->_pRight == pParent)
+				proot->_pRight = pR;
+			else
+				proot->_pLeft = pR;
+		}
+		pR->_pParent = proot;
+	}
+	// 右单旋
+	void RotateR(Node* pParent)
+	{
+		Node* pL = pParent->_pLeft;
+		Node* proot = pParent->_pParent;//链接整体子树
+
+		pParent->_pLeft = pL->_pRight;
+		if (pL->_pRight)
+			pL->_pRight->_pParent = pParent;
+
+		pL->_pRight = pParent;
+		pParent->_pParent = pL;
+
+		//特殊情况;
+		if (proot == nullptr)
+			_pHead = pL;
+		else
+		{
+			if (proot->_pRight == pParent)
+				proot->_pRight = pL;
+			else
+				proot->_pLeft = pL;
+		}
+		pL->_pParent = proot;
+	}
+
+	// 为了操作树简单起见：获取根节点
+	Node*& GetRoot()
+	{
+		return _pHead;
+	}
+private:
+	Node* _pHead;
+};
+
+int main()
+{
+	//int a[] = { 16, 3, 7, 11, 9, 26, 18,20};
+	RBTree<int>t;
+	const int n = 10000;
+	vector<int> a;
+	a.reserve(n);
+	srand(time(0));
+	
+	for (size_t i = 0; i < n; ++i)
+	{
+		a.push_back(rand());
+	}
+
+	for (auto e : a)
+	{
+		t.Insert(e);
+	}
+	t.InOrder();
+	cout<<t.IsValidRBTRee()<<endl;
+	return 0;
+}
