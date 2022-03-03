@@ -1,0 +1,622 @@
+//==============================================红黑树和迭代器=//=======================================================================================================
+//==============================================红黑树和迭代器=//=======================================================================================================
+//==============================================红黑树和迭代器=//=======================================================================================================
+//==============================================红黑树和迭代器=//=======================================================================================================
+#include<iostream>
+
+#include<algorithm>
+#include<vector>
+using namespace std;
+enum Color { RED, BLACK };
+template<class T>
+struct RBTreeNode
+{
+	RBTreeNode(const T& data = T(), Color color = RED)
+		: _pLeft(nullptr)
+		, _pRight(nullptr)
+		, _pParent(nullptr)
+		, _data(data)
+		, _color(color)
+	{}
+
+	RBTreeNode<T>* _pLeft;
+	RBTreeNode<T>* _pRight;
+	RBTreeNode<T>* _pParent;
+	T _data;
+	Color _color;
+};
+//迭代器;
+template<class T>
+struct RBTreeIterator
+{
+	typedef RBTreeNode<T> Node;
+	typedef RBTreeIterator<T> Self;
+
+	RBTreeIterator(Node* pNode)
+		: _pNode(pNode)
+	{}
+
+	// 让迭代器具有类似指针的行为
+	T& operator*()
+	{
+		return _pNode->_data;;
+	}
+	T* operator->()
+	{
+		return &(_pNode->_data);
+	}
+
+	// 然迭代器可以移动：前置/后置++  
+	Self& operator++()
+	{
+		Increament();
+		return *this;
+	}
+	Self operator++(int)
+	{
+		Self tmp(*this);
+		operator++();
+		return tmp;
+	}
+	// 然迭代器可以移动：前置/后置-- 
+	Self& operator--()
+	{
+		DeIncreament();
+		return *this;
+	}
+	Self operator--(int)
+	{
+		Self tmp(*this);
+		return tmp;
+	}
+
+	// 让迭代器可以比较
+	bool operator!=(const Self& s)const
+	{
+		return _pNode != s._pNode;
+	}
+	bool operator==(const Self& s)const
+	{
+		return _pNode == s._pNode;
+	}
+
+private:
+	void Increament()//++_pNode
+	{
+		//1、如果it指向节点的右子树不为空，
+		//下一个就++到右子树中序第一个节点，也就是右子树的最左节点。
+		if (_pNode->_pRight)
+		{
+			Node* cur = _pNode->_pRight;
+			while (cur->_pLeft)
+			{
+				cur = cur->_pLeft;
+			}
+			_pNode = cur;
+		}
+		//2.如果it指向节点右子树为空，下一个++要访问节点是
+		//，沿着it指向节点到根节点的路径中，孩子是父亲左的那个 父亲节点
+		else
+		{
+			Node* cur = _pNode;
+			Node* par = cur->_pParent;
+			while (par)
+			{
+				if (par->_pLeft == cur)
+				{
+					_pNode = par;
+					break;
+				}
+				else
+				{
+					cur = par;
+					par = par->_pParent;
+				}
+			}
+		}
+	}
+	void DeIncreament()//--_pNode
+	{
+		//1.左边有(比他小)，则找到左子树的最右边;
+		if (_pNode->_pLeft)
+		{
+			Node* cur = _pNode;
+			while (cur->_pRight)
+			{
+				cur = cur->_pRight;
+			}
+			_pNode = cur;
+		}
+		////2.如果it指向节点左子树为空，下一个--要访问节点是
+		//，沿着it指向节点到根节点的路径中，孩子是父亲左右的那个 父亲节点
+		else
+		{
+			Node* cur = _pNode;
+			Node* par = cur->_pParent;
+			while (par)
+			{
+				if (par->_pParent == cur)
+				{
+					_pNode = par;
+					break;
+				}
+				else
+				{
+					cur = par;
+					par = cur->_pParent;
+				}
+			}
+		}
+	}
+	Node* _pNode;
+};
+
+
+// T: 可能是键值对<key,value>
+//    可能是一个key
+// 不论节点中存储的是<key, value> || key, 都是按照key来进行比较的
+// KeyOfValue: 提取data中的Key
+template<class T, class KeyOfValue>
+class RBTree
+{
+	typedef RBTreeNode<T> Node;
+public:
+	typedef RBTreeIterator<T> iterator;
+public:
+	RBTree()
+		: _size(0)
+	{
+		_pHead = nullptr;
+	}
+
+	// 插入值为data的节点
+	// 返回值含义：iterator代表新插入节点   bool：代表释放插入成功
+
+	pair<iterator, bool> Insert(const T& data)
+	{
+		KeyOfValue ii;
+		Node* newnode = new Node(data);
+		if (_pHead == nullptr)
+		{
+			_pHead = newnode;
+			_pHead->_color = BLACK;
+			return make_pair(newnode, true);
+		}
+		Node* cur = _pHead;
+		Node* parent = cur;
+		while (cur)
+		{
+			if (ii(cur->_data)> ii(data))
+			{
+				parent = cur;
+				cur = cur->_pLeft;
+			}
+
+			else if (ii(cur->_data) < ii(data))
+			{
+				parent = cur;
+				cur = cur->_pRight;
+			}
+			//_data == data
+			else
+			{
+				delete newnode;
+				return make_pair(_pHead, false);;
+			}
+		}
+		//待插入位置cur 父亲parent
+		cur = newnode;
+		if (ii(parent->_data) < ii(data))
+			parent->_pRight = newnode;
+		else
+			parent->_pLeft = newnode;
+		cur->_pParent = parent;
+
+		//更新red-black-tree近似平衡（看图2种情况）;
+		// 	//case:1.c红p红g黑u存在且为红(关键看叔叔) 叔叔可能不存在噢 防止nullptr引用;
+		// //case2:.c红 p红 g黑 u存在且为黑 OR u不存在(关键看叔叔)有单旋和双旋，并且与u在左or右有关 分情况讨论
+
+
+
+		//解决:p,u改黑g改红，循环改色(改完可能又俩red连起来了 之前的g(黑改红了)和g的parent ,特例g之前为root，g的parent是null了;	
+		Node* p = parent;//都改成首字母方便使用和统一;
+		Node* g;
+		Node* u;
+		while (p && p->_color == RED)//前条件形成red-red的case1
+		{
+			g = p->_pParent;
+			//可能u左p右 or u在右p在左，牵扯2，3情况的旋转方向;
+			if (g->_pLeft == p)
+			{
+				u = g->_pRight;
+				//case:1.c红p红g黑u存在且为红(关键看叔叔) 叔叔可能不存在噢 防止nullptr引用;
+				if (u && u->_color == RED)
+				{
+					p->_color = BLACK;
+					u->_color = BLACK;
+					g->_color = RED;
+					cur = g;
+					p = cur->_pParent;
+				}
+
+				//----------------------2/3都有先经过1转来的特例 所以包1while里 但是走了2，3根变黑，则不需要了直接跳出
+				//case2:.c红 p红 g黑 u存在且为黑 OR u不存在(关键看叔叔)
+				//解决:旋转(可能双旋,而且u在左还是在右分情况讨论)
+				else
+				{
+					//<左左>右单旋;
+					if (p->_pLeft == cur)
+					{
+						RotateR(g);
+						//(p拉上去成root了,所以p改黑，g改红 颜色互换 cur不牵扯变色)
+						g->_color = RED;
+						p->_color = BLACK;
+					}
+					//<左右折线>左右双旋
+					else
+					{
+						RotateL(p);
+						RotateR(g);
+						//双旋是吧cur提上去的 cur牵扯变色了 所以cur变black 剩下俩变红
+						cur->_color = BLACK;
+						g->_color = RED;
+					}
+					break;
+				}
+			}
+
+			else//g->_pRight == p
+			{
+				u = g->_pLeft;
+				//case:1
+				if (u && u->_color == RED)
+				{
+					p->_color = BLACK;
+					u->_color = BLACK;
+					g->_color = RED;
+					cur = g;
+					p = cur->_pParent;
+				}
+				//----------------------2/3都有先经过1转来的特例 所以包1while里 但是走了2，3根变黑，则不需要了直接跳出
+				//case2:
+				else
+				{
+					//<右右>左单旋
+					if (p->_pRight == cur)
+					{
+						RotateL(g);
+						//(p拉上去成root了,所以p改黑，g改红 颜色互换 cur不牵扯变色)
+						g->_color = RED;
+						p->_color = BLACK;
+					}
+					////<右左>左右单旋
+					else
+					{
+						RotateR(p);
+						RotateL(g);
+						//双旋是吧cur提上去的 cur牵扯变色了 所以cur变black 剩下俩变红
+						cur->_color = BLACK;
+						g->_color = RED;
+					}
+					break;
+				}
+
+			}
+		}
+
+
+		//暴力置换防止a一考试g是root又被改红
+		_pHead->_color = BLACK;
+		return make_pair(newnode, true);
+
+	}
+	// Begin和End迭代器
+	iterator Begin()
+	{
+		return _LeftMost();
+	}
+	iterator End()
+	{
+		return nullptr;
+	}
+
+	// 红黑树是否为空，是返回true，否则返回false
+	bool Empty()const
+	{
+		return _size == 0 ? true : false;
+	}
+	// 返回红黑树中有效节点的个数
+	size_t Size()const
+	{
+		return _size;
+	}
+	// 将红黑树中的有效节点删除，注意：删除的是有效节点，不删除头结点
+	void Clear()
+	{
+		void _Destroy(_pHead);
+	}
+	// 在红黑树中查找data，存在赶回该节点对应的迭代器，否则返回End()
+
+	iterator Find(const T& data)
+	{
+	
+		KeyOfValue ii;
+		Node* cur = _pHead;
+		Node* parent = cur;
+		while (cur)
+		{
+			if (ii(cur->_data)> ii(data) )
+			{
+				parent = cur;
+				cur = cur->_pLeft;
+			}
+
+			else if (ii(cur->_data) < ii(data))
+			{
+				parent = cur;
+				cur = cur->_pRight;
+			}
+			//_data == data
+			else
+				break;
+
+		}
+		return cur;
+	}
+
+private:
+	Node* _LeftMost()
+	{
+		if (_pHead == nullptr)
+			return nullptr;
+		Node* cur = _pHead;
+		Node* ret = cur;
+		while (cur)
+		{
+			ret = cur;
+			cur = cur->_pLeft;
+		}
+		return ret;
+	}
+
+	// 获取红黑树最右侧节点
+	Node* _RightMost()
+	{
+		if (_pHead == nullptr)
+			return nullptr;
+		Node* cur = _pHead;
+		Node* ret = cur;
+		while (cur)
+		{
+			ret = cur;
+			cur = cur->_pRight;
+		}
+		return ret;
+
+	}
+	void _Destroy(Node*& pRoot)
+	{
+		if (pRoot == nullptr)
+			return;
+		_Destroy(pRoot->_pLeft);
+		_Destroy(pRoot->_pRight);
+		delete pRoot;
+		pRoot = nullptr;
+	}
+	// 左单旋
+	void RotateL(Node* pParent)
+	{
+		Node* proot = pParent->_pParent;//链接整体子树
+		Node* pR = pParent->_pRight;
+
+		pParent->_pRight = pR->_pLeft;
+		if (pR->_pLeft)
+			pR->_pLeft->_pParent = pParent;
+
+		pR->_pLeft = pParent;
+		pParent->_pParent = pR;
+		//不是AVL树 所以不用更新平衡因子噢;'
+
+		//特殊情况;
+		if (proot == nullptr)
+			_pHead = pR;
+		else
+		{
+			if (proot->_pRight == pParent)
+				proot->_pRight = pR;
+			else
+				proot->_pLeft = pR;
+		}
+		pR->_pParent = proot;
+	}
+	// 右单旋
+	void RotateR(Node* pParent)
+	{
+		Node* pL = pParent->_pLeft;
+		Node* proot = pParent->_pParent;//链接整体子树
+
+		pParent->_pLeft = pL->_pRight;
+		if (pL->_pRight)
+			pL->_pRight->_pParent = pParent;
+
+		pL->_pRight = pParent;
+		pParent->_pParent = pL;
+
+		//特殊情况;
+		if (proot == nullptr)
+			_pHead = pL;
+		else
+		{
+			if (proot->_pRight == pParent)
+				proot->_pRight = pL;
+			else
+				proot->_pLeft = pL;
+		}
+		pL->_pParent = proot;
+	}
+private:
+	Node* _pHead;
+	size_t _size;
+};
+//=============================================set=======================================================================================================
+//==============================================set=======================================================================================================
+//==============================================set======================================================================================================
+//=============================================set====================================================================================================
+#include"test.h"
+
+namespace bit  // 同上
+{
+	template<class K>
+	class set
+	{
+		typedef K ValueType;
+
+		struct KeyOfValue
+		{
+			const K& operator()(const ValueType& data)
+			{
+				return data;
+			}
+		};
+
+		typedef RBTree<ValueType, KeyOfValue> RBTree;
+		typename typedef RBTree::iterator iterator;
+	public:
+		set() : t() {}
+		////////////////////////////
+		// iterator: begin/end
+		iterator begin()
+		{
+			return t.Begin();
+		}
+		iterator end()
+		{
+			return t.End();
+		}
+		//////////////////////////////
+		// capacity
+		bool empty()const
+		{
+			return t.Empty();
+		}
+		size_t size()const
+		{
+			return t.Size();
+		}
+		///////////////////////////
+		// modify
+		pair<iterator, bool> insert(const ValueType& data)
+		{
+			return t.Insert(data);
+		}
+		void clear()
+		{
+			t.Clear();
+		}
+		iterator find(const K& key)
+		{
+			return t.Find(key);
+		}
+	private:
+		RBTree t;
+	};
+}
+
+
+//int main()
+//{
+//
+//
+//	bit::set<int> s;
+//	s.insert(1);
+//	s.find(1);
+//	return 0;
+//}
+//=============================================map=======================================================================================================
+//==============================================map=======================================================================================================
+//==============================================map======================================================================================================
+//=============================================map====================================================================================================
+#include"test.h"
+namespace xxx   // 为了防止重复,请同学们自己重取命名空间的名字，否则博客中全部是一样的，面试时会尴尬
+{
+	template<class K, class V>
+	class map
+	{
+		typedef pair<K, V> ValueType;
+		struct KeyOfValue
+		{
+			const K& operator()(const ValueType& data)
+			{
+				return data.first;
+			}
+		};
+
+		typedef RBTree<ValueType, KeyOfValue> RBTree;
+		typename typedef RBTree::iterator iterator;
+	public:
+		map() : t() {}
+
+		/////////////////////////////
+		// iterator：beign和end
+		iterator begin()
+		{
+			return t.Begin();
+		}
+		iterator end()
+		{
+			return t.End();
+		}
+
+		///////////////////////////////
+		// capacity
+		bool empty()const
+		{
+			return t.Empty();
+		}
+		size_t size()const
+		{
+			return t.Size();
+		}
+
+		///////////////////////////////
+		// access
+		V& operator[](const K& key)
+		{
+			pair<iterator, bool> ret = t.insert(make_pair(key,V()));
+			return (ret.first)->second;
+		}
+
+		///////////////////////////////
+		// modify
+		pair<iterator, bool> insert(const ValueType& data)
+		{
+			return t.Insert(data);
+		}
+		void clear()
+		{
+			t.Clear();
+		}
+		iterator find(const K& key)
+		{
+			return t.Find(pair<K, V>(key, V()));
+		}
+	private:
+		RBTree t;
+	};
+}
+
+int main()
+{
+
+	xxx::map<int, int> s;
+	s.insert(make_pair(1, 1));
+	s.insert(make_pair(1, 2));
+	s.insert(make_pair(1, 1));
+	s.insert(make_pair(3, 3));
+	s.find(1);
+	/*bit::set<int> s;
+	s.insert(1);
+	s.find(1);
+	return 0;*/
+}
+
