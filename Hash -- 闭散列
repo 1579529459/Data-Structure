@@ -1,0 +1,208 @@
+#pragma once
+#include<iostream>
+#include <vector>
+
+using namespace std;
+
+namespace close_hash
+{
+	enum Status
+	{
+		EMPTY,
+		EXITS,
+		DELETE
+	};
+
+	template<class K, class V>
+	struct HashData
+	{
+		pair<K, V> _kv;
+		Status _status = EMPTY;
+	};
+
+	template<class K>
+	struct HashFunc
+	{
+		size_t operator()(const K& key)
+		{
+			return key;
+		}
+	};
+
+	// 特化
+	template<>
+	struct HashFunc<string>
+	{
+		size_t operator()(const string& key)
+		{
+			// BKDR Hash思想
+			size_t hash = 0;
+			for (size_t i = 0; i < key.size(); ++i)
+			{
+				hash *= 131;
+				hash += key[i];
+			}
+
+			return hash;
+		}
+	};
+
+	struct HashFuncString
+	{
+		// https://www.cnblogs.com/-clq/archive/2012/05/31/2528153.html
+		size_t operator()(const string& key)
+		{
+			// BKDR Hash思想
+			size_t hash = 0;
+			for (size_t i = 0; i < key.size(); ++i)
+			{
+				hash *= 131;
+				hash += key[i];
+			}
+
+			return hash;
+		}
+	};
+
+	template<class K, class V, class Hash = HashFunc<K>>
+	class HashTable
+	{
+	public:
+		bool Erase(const K& key)
+		{
+			HashData<K, V>* ret = Find(key);
+			if (ret == nullptr)
+			{
+				return false;
+			}
+			else
+			{
+				// 伪删除法
+				ret->_status = DELETE;
+				_n--;
+				return true;
+			}
+		}
+
+		HashData<K, V>* Find(const K& key)
+		{
+			if (_tables.size() == 0)
+			{
+				return nullptr;
+			}
+
+			Hash hf;
+			size_t start = hf(key) % _tables.size();
+			size_t i = 0;
+			size_t index = start + i;
+			while (_tables[index]._status != EMPTY)
+			{
+				if (_tables[index]._kv.first == key
+					&& _tables[index]._status == EXITS)
+				{
+					return &_tables[index];
+				}
+				else
+				{
+					++i;
+					//index = start + i; // 线性探测
+					index = start + i * i; // 二次探测
+					index %= _tables.size();
+				}
+			}
+
+			return nullptr;
+		}
+
+		bool Insert(const pair<K, V>& kv)
+		{
+			if (Find(kv.first))
+			{
+				return false;
+			}
+
+			if (_tables.size() == 0 || _n * 10 / _tables.size() >= 7)
+			{
+				//size_t newSize = _tables.size() == 0 ? 10 : _tables.size() * 2;
+				// ...
+				//vector<HashData<K, V>> newTable;
+				//newTable.resize(newSize);
+				//for (size_t i = 0; i < _tables.size(); ++i)
+				//{
+				//	if (_tables[i].status == EXITS)
+				//	{
+				//		// ...
+				//		size_t index = _tables[i]._kv.first % newTable.size();
+				//		// ...
+				//	}
+				//}
+				size_t newSize = _tables.size() == 0 ? 10 : _tables.size() * 2;
+				HashTable<K, V, Hash> newHT;
+				newHT._tables.resize(newSize);
+				for (auto& e : _tables)
+				{
+					if (e._status == EXITS)
+					{
+						newHT.Insert(e._kv);
+					}
+				}
+
+				_tables.swap(newHT._tables);
+			}
+
+			Hash hf;
+			size_t start = hf(kv.first) % _tables.size();
+			size_t i = 0;
+			size_t index = start + i;
+			while (_tables[index]._status == EXITS)
+			{
+				++i;
+				index = start + i; // 线性探测
+				//index = start + i*i; // 二次探测
+				index %= _tables.size();
+			}
+
+			_tables[index]._kv = kv;
+			_tables[index]._status = EXITS;
+			++_n;
+
+			return true;
+		}
+
+	private:
+		vector<HashData<K, V>> _tables;
+		size_t _n = 0; // 存储有效数据的个数
+	};
+
+	void TestHashTable1()
+	{
+		//int a[] = { 5, 3, 100, 9999, 333, 14, 26, 34, 5};
+		int a[] = { 5, 15, 25, 35, 45 };
+		HashTable<int, int> ht;
+		for (auto e : a)
+		{
+			ht.Insert(make_pair(e, e));
+		}
+
+		ht.Erase(3);
+		cout << ht.Find(3) << endl;
+	}
+
+	void TestHashTable2()
+	{
+		//HashTable<string, string, HashFuncString> dict;
+		HashTable<string, string> dict;
+		dict.Insert(make_pair("sort", "排序"));
+		dict.Insert(make_pair("insert", "插入"));
+
+		HashFuncString hf;
+		cout << hf("abcd") << endl;
+		cout << hf("bcad") << endl;
+		cout << hf("aadd") << endl;
+	}
+}
+
+int main()
+{
+	return 0;
+}
