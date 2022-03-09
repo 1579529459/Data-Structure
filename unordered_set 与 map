@@ -33,6 +33,8 @@ struct HashFunc < string >
 	}
 };
 
+
+//namespace open_hash
 namespace bucket_hash
 {
 	template<class T>
@@ -47,28 +49,7 @@ namespace bucket_hash
 		{}
 	};
 
-	size_t GetNextPrime(size_t prime)
-	{
-		const int PRIMECOUNT = 28;
-		static const size_t primeList[PRIMECOUNT] =
-		{
-			53ul, 97ul, 193ul, 389ul, 769ul,
-			1543ul, 3079ul, 6151ul, 12289ul, 24593ul,
-			49157ul, 98317ul, 196613ul, 393241ul, 786433ul,
-			1572869ul, 3145739ul, 6291469ul, 12582917ul, 25165843ul,
-			50331653ul, 100663319ul, 201326611ul, 402653189ul, 805306457ul,
-			1610612741ul, 3221225473ul, 4294967291ul
-		};
-
-		size_t i = 0;
-		for (; i < PRIMECOUNT; ++i)
-		{
-			if (primeList[i] > prime)
-				return primeList[i];
-		}
-
-		return primeList[i];
-	}
+	
 
 	// 前置声明
 	template<class K, class T, class Hash, class KeyOfT>
@@ -165,7 +146,28 @@ namespace bucket_hash
 
 			return end();
 		}
+		size_t GetNextPrime(size_t prime)
+		{
+			const int PRIMECOUNT = 28;
+			static const size_t primeList[PRIMECOUNT] =
+			{
+				53ul, 97ul, 193ul, 389ul, 769ul,
+				1543ul, 3079ul, 6151ul, 12289ul, 24593ul,
+				49157ul, 98317ul, 196613ul, 393241ul, 786433ul,
+				1572869ul, 3145739ul, 6291469ul, 12582917ul, 25165843ul,
+				50331653ul, 100663319ul, 201326611ul, 402653189ul, 805306457ul,
+				1610612741ul, 3221225473ul, 4294967291ul
+			};
 
+			size_t i = 0;
+			for (; i < PRIMECOUNT; ++i)
+			{
+				if (primeList[i] > prime)
+					return primeList[i];
+			}
+
+			return primeList[i];
+		}
 		iterator end()
 		{
 			return iterator(nullptr, this);
@@ -261,7 +263,7 @@ namespace bucket_hash
 			return nullptr;
 		}
 
-		bool Insert(const T& data)
+		pair<iterator,bool> Insert(const T& data)
 		{
 			Hash hf;
 			KeyOfT kot;
@@ -303,7 +305,7 @@ namespace bucket_hash
 			{
 				if (kot(cur->_data) == kot(data))
 				{
-					return false;
+					return make_pair(iterator(cur,this),false);
 				}
 				else
 				{
@@ -317,7 +319,7 @@ namespace bucket_hash
 
 			++_n;
 
-			return true;
+			return make_pair(iterator(cur, this), true);
 		}
 
 	private:
@@ -325,40 +327,8 @@ namespace bucket_hash
 		size_t _n = 0; // 存储多少有效数据
 	};
 
-	//void TestHashTable1()
-	//{
-	//	HashTable<int, int> ht;
-	//	int a[] = { 4, 44, 14, 5, 2, 22, 12, 5, 8, 10, 15};
-	//	for (auto e : a)
-	//	{
-	//		ht.Insert(make_pair(e, e));
-	//	}
-
-	//	ht.Insert(make_pair(11, 11));
-
-	//	ht.Erase(22);
-	//	ht.Erase(2);
-	//}
-
-	//void TestHashTable2()
-	//{
-	//	//HashTable<string, string, HashFuncString> dict;
-	//	HashTable<string, string> dict;
-	//	dict.Insert(make_pair("sort", "排序"));
-	//	dict.Insert(make_pair("insert", "插入"));
-	//	dict.Insert(make_pair("erase", "删除"));
-	//}
-
-	//void TestHashTable3()
-	//{
-	//	HashTable<int, int> ht;
-	//	for (size_t i = 0; i < 53; ++i)
-	//	{
-	//		ht.Insert(make_pair(rand(), i));
-	//	}
-
-	//	ht.Insert(make_pair(rand(), 0));
-	//}
+	
+	
 }
 //=============================set=========================================//
 //=============================set=========================================//
@@ -392,7 +362,7 @@ namespace bit
 			return _ht.end();
 		}
 
-		bool insert(const K& key)
+		pair<iterator,bool> insert(const K& key)
 		{
 			return _ht.Insert(key);
 		}
@@ -400,31 +370,7 @@ namespace bit
 		bucket_hash::HashTable<K, K, Hash, SetKeyOfT> _ht;
 	};
 
-	void test_unordered_set()
-	{
-		unordered_set<int> s;
-		s.insert(3);
-		s.insert(4);
-		s.insert(5);
-		s.insert(3);
-		s.insert(1);
-		s.insert(2);
-		s.insert(6);
-		s.insert(16);
-		s.insert(46);
-		s.insert(26);
-		s.insert(36);
-		s.insert(1136);
-
-
-		unordered_set<int>::iterator it = s.begin();
-		while (it != s.end())
-		{
-			cout << *it << " ";
-			++it;
-		}
-		cout << endl;
-	}
+	
 }
 //=====================map==========================================//
 //=====================map==========================================//
@@ -437,17 +383,31 @@ namespace bit
 	template<class K, class V, class Hash = HashFunc<K>>
 	class unordered_map
 	{
+		typedef typename bucket_hash::HashTable<K, K, Hash, SetKeyOfT>::iterator iterator;
 		struct MapKeyOfT
 		{
 			const K& operator()(const pair<const K, V>& kv) const
 			{
 				return kv.first;
 			}
+			
 		};
 	public:
-		bool insert(const pair<const K, V>& kv)
+		pair<iterator, bool> insert(const pair<K, V>& valye)
 		{
-			return _ht.Insert(kv);
+			return _ht.Insert(valye);
+		}
+
+		iterator erase(iterator position)
+		{
+			return _ht.Erase(position);
+		}
+		iterator begin() { return _ht.begin(); }
+		iterator end() { return _ht.end(); }
+		V& operator[](const K& key)
+		{
+			pair<iterator, bool> ret = _ht.InsertUnique(pair<K, V>(key, V()));
+			return ret.fisrt->second;
 		}
 	private:
 		bucket_hash::HashTable<K, pair<const K, V>, Hash, MapKeyOfT> _ht;
